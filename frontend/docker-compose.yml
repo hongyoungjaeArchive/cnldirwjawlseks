@@ -1,0 +1,57 @@
+services:
+
+  # ── 1. Ollama LLM 서버 ─────────────────────────────
+  ollama:
+    image: ollama/ollama
+    container_name: vuln-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama   # 모델 캐시 (재시작해도 유지)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── 2. 모델 자동 설치 (최초 1회) ───────────────────
+  ollama-init:
+    image: ollama/ollama
+    container_name: vuln-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      /bin/sh -c "
+        echo '[init] codellama 모델 설치 시작...' &&
+        ollama pull codellama &&
+        echo '[init] 완료!'
+      "
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: "no"
+
+  # ── 3. Next.js 프론트엔드 ──────────────────────────
+  frontend:
+    build:
+      context: .
+      args:
+        # 브라우저가 Ollama에 접근하는 주소
+        # 같은 PC에서 접속 시: http://localhost:11434
+        # 다른 PC에서 접속 시: http://<서버IP>:11434
+        NEXT_PUBLIC_OLLAMA_URL: http://localhost:11434
+    container_name: vuln-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+    name: vuln-ollama-data
