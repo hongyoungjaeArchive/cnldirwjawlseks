@@ -1,4 +1,5 @@
 import type { AnalysisRequest, AnalysisResult, DiffLine } from './types'
+import { getStoredApiKey } from './apiKey'
 
 export type AnalysisPhase = 'pass1' | 'pass2'
 export type Pass2Model = 'sonnet' | 'opus'
@@ -18,9 +19,15 @@ interface DetectionResult {
 }
 
 async function callAnalyzeAPI(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const apiKey = getStoredApiKey()
+  if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 헤더의 키 버튼을 클릭하여 Claude API 키를 입력해주세요.')
+
   const res = await fetch('/api/analyze', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+    },
     body: JSON.stringify(payload),
   })
   const data = await res.json()

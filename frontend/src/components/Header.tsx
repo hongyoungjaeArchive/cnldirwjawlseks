@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShieldCheck, Menu, X, Zap } from 'lucide-react'
+import { ShieldCheck, Menu, X, Zap, KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useApiKey } from '@/lib/apiKeyContext'
 
 const navItems = [
   { href: '/', label: '홈' },
@@ -15,6 +16,7 @@ const navItems = [
 export function Header() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { hasKey, openModal } = useApiKey()
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-sky-100 shadow-sm shadow-sky-100/60">
@@ -58,6 +60,22 @@ export function Header() {
 
           {/* 오른쪽 */}
           <div className="flex items-center gap-2">
+            {/* API 키 상태 버튼 */}
+            <button
+              onClick={openModal}
+              title={hasKey ? 'API 키 설정됨 — 클릭하여 변경' : 'API 키 없음 — 클릭하여 설정'}
+              className={cn(
+                'flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[11px] font-medium border transition-all duration-200',
+                hasKey
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                  : 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 animate-pulse',
+              )}
+            >
+              <div className={cn('w-1.5 h-1.5 rounded-full', hasKey ? 'bg-emerald-500' : 'bg-amber-500')} />
+              <KeyRound className="h-3 w-3" />
+              <span className="hidden sm:inline">{hasKey ? 'API 키 설정됨' : 'API 키 필요'}</span>
+            </button>
+
             <Link
               href="/analyze"
               className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-semibold

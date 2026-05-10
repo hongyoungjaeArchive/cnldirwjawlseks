@@ -11,6 +11,7 @@ import { CodeEditor } from '@/components/analyze/CodeEditor'
 import { FileUpload } from '@/components/analyze/FileUpload'
 import { AnalysisLoadingState } from '@/components/ui/LoadingState'
 import { useAnalysis } from '@/lib/context'
+import { useApiKey } from '@/lib/apiKeyContext'
 import { cn } from '@/lib/utils'
 import type { Language } from '@/lib/types'
 import type { Pass2Model } from '@/lib/claude'
@@ -54,6 +55,7 @@ int main() {
 export default function AnalyzePage() {
   const router = useRouter()
   const { runAnalysis, isLoading, phase, error, clearResult, pass2Model, setPass2Model } = useAnalysis()
+  const { hasKey, openModal } = useApiKey()
 
   const [language, setLanguage] = useState<Language>('c')
   const [code, setCode] = useState('')
@@ -83,7 +85,7 @@ export default function AnalyzePage() {
     )
   }
 
-  const canAnalyze = code.trim().length > 0
+  const canAnalyze = code.trim().length > 0 && hasKey
 
   return (
     <div className="flex-1 flex flex-col px-4 py-7 sm:px-6 max-w-7xl mx-auto w-full">
@@ -320,7 +322,11 @@ export default function AnalyzePage() {
               분석 시작
               {canAnalyze && <Zap className="w-3 h-3 opacity-60" />}
             </button>
-            {!code.trim() && (
+            {!hasKey ? (
+              <p className="text-center text-[11px] text-amber-600 mt-2">
+                <button onClick={openModal} className="underline hover:text-amber-700">API 키를 설정</button>하면 분석이 가능합니다
+              </p>
+            ) : !code.trim() && (
               <p className="text-center text-[11px] text-slate-600 mt-2">
                 코드를 입력하면 분석 버튼이 활성화됩니다
               </p>

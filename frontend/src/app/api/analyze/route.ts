@@ -1,11 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
-// prompt-caching 베타 헤더 포함
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  defaultHeaders: { 'anthropic-beta': 'prompt-caching-2024-07-31' },
-})
+const BETA_HEADERS = { 'anthropic-beta': 'prompt-caching-2024-07-31' }
+
+function makeClient(apiKey: string) {
+  return new Anthropic({ apiKey, defaultHeaders: BETA_HEADERS })
+}
 
 const PASS1_MODEL = 'claude-haiku-4-5-20251001'
 const PASS2_MODELS = {
@@ -231,6 +231,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { code, language, pass, pass2Model, isSafe, detection } = body
+
+  // 클라이언트가 보낸 키 우선, 없으면 서버 환경변수 폴백
+  const apiKey = req.headers.get('x-api-key') ?? process.env.ANTHROPIC_API_KEY ?? ''
+  if (!apiKey) return NextResponse.json({ error: 'API 키가 없습니다. 화면의 키 설정 버튼을 클릭해주세요.' }, { status: 401 })
+
+  const client = makeClient(apiKey)
 
   try {
     /* ── Pass 1: 취약점 탐지 ── */
