@@ -11,6 +11,7 @@ import { CodeExplainPanel } from '@/components/results/CodeExplainPanel'
 import { FixedCodePanel } from '@/components/results/FixedCodePanel'
 import { DiffPanel } from '@/components/results/DiffPanel'
 import { DetailPanel } from '@/components/results/DetailPanel'
+import { CWEPanel } from '@/components/results/CWEPanel'
 import { PageLoadingSpinner } from '@/components/ui/LoadingState'
 
 const sectionVariants = {
@@ -101,26 +102,31 @@ export default function ResultsPage() {
         </motion.div>
 
         <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionLabel num="02" label="원본 코드 · LLM 설명" />
+          <SectionLabel num="02" label="CWE 취약점 상세" />
+          <CWEPanel result={result} />
+        </motion.div>
+
+        <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible">
+          <SectionLabel num="03" label="원본 코드 · LLM 설명" />
           <CodeExplainPanel result={result} />
         </motion.div>
 
         {isVulnerable && (
-          <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible">
-            <SectionLabel num="03" label="수정 코드 제안" />
+          <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible">
+            <SectionLabel num="04" label="수정 코드 제안" />
             <FixedCodePanel result={result} />
           </motion.div>
         )}
 
         {isVulnerable && (
-          <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible">
-            <SectionLabel num="04" label="Before / After 비교" />
+          <motion.div custom={4} variants={sectionVariants} initial="hidden" animate="visible">
+            <SectionLabel num="05" label="Before / After 비교" />
             <DiffPanel result={result} />
           </motion.div>
         )}
 
-        <motion.div custom={4} variants={sectionVariants} initial="hidden" animate="visible">
-          <SectionLabel num={isVulnerable ? '05' : '03'} label="세부 분석 정보" />
+        <motion.div custom={5} variants={sectionVariants} initial="hidden" animate="visible">
+          <SectionLabel num={isVulnerable ? '06' : '04'} label="세부 분석 정보" />
           <DetailPanel result={result} />
         </motion.div>
       </div>

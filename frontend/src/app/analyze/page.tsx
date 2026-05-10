@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Code2, Upload, Play, ChevronRight,
-  Info, AlertCircle, Bot, RefreshCw, Zap, Sparkles,
+  Info, AlertCircle, Bot, Zap, Sparkles,
 } from 'lucide-react'
 import { CodeEditor } from '@/components/analyze/CodeEditor'
 import { FileUpload } from '@/components/analyze/FileUpload'
 import { AnalysisLoadingState } from '@/components/ui/LoadingState'
 import { useAnalysis } from '@/lib/context'
-import { fetchOllamaModels, DEFAULT_MODEL } from '@/lib/ollama'
 import { cn } from '@/lib/utils'
 import type { Language } from '@/lib/types'
+import type { Pass2Model } from '@/lib/claude'
 
 type InputMode = 'editor' | 'upload'
 
@@ -53,30 +53,14 @@ int main() {
 
 export default function AnalyzePage() {
   const router = useRouter()
-  const { runAnalysis, isLoading, phase, error, clearResult, model, setModel } = useAnalysis()
+  const { runAnalysis, isLoading, phase, error, clearResult, pass2Model, setPass2Model } = useAnalysis()
 
   const [language, setLanguage] = useState<Language>('c')
   const [code, setCode] = useState('')
   const [inputMode, setInputMode] = useState<InputMode>('editor')
-  const [availableModels, setAvailableModels] = useState<string[]>([])
-  const [modelsLoading, setModelsLoading] = useState(true)
-  const [ollamaConnected, setOllamaConnected] = useState<boolean | null>(null)
 
   useEffect(() => {
     clearResult()
-    const load = async () => {
-      setModelsLoading(true)
-      const models = await fetchOllamaModels()
-      if (models.length > 0) {
-        setOllamaConnected(true)
-        setAvailableModels(models)
-        if (!models.includes(model)) setModel(models[0])
-      } else {
-        setOllamaConnected(false)
-      }
-      setModelsLoading(false)
-    }
-    load()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -94,12 +78,12 @@ export default function AnalyzePage() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <AnalysisLoadingState model={model} phase={phase} />
+        <AnalysisLoadingState model={`Claude Haiku + ${pass2Model === 'opus' ? 'Opus' : 'Sonnet'}`} phase={phase} />
       </div>
     )
   }
 
-  const canAnalyze = code.trim().length > 0 && ollamaConnected !== false
+  const canAnalyze = code.trim().length > 0
 
   return (
     <div className="flex-1 flex flex-col px-4 py-7 sm:px-6 max-w-7xl mx-auto w-full">
@@ -200,64 +184,50 @@ export default function AnalyzePage() {
           transition={{ delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col gap-3"
         >
-          {/* Ollama 모델 선택 */}
+          {/* Claude API 상태 */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-1.5">
                 <Bot className="w-3.5 h-3.5 text-violet-500" />
-                <p className="text-xs font-semibold text-slate-600">Ollama 모델</p>
+                <p className="text-xs font-semibold text-slate-600">AI 모델</p>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className={cn(
-                  'w-1.5 h-1.5 rounded-full',
-                  ollamaConnected === null ? 'bg-slate-300 animate-pulse' :
-                  ollamaConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400',
-                )} />
-                <span className={cn(
-                  'text-[11px] font-medium',
-                  ollamaConnected === null ? 'text-slate-600' :
-                  ollamaConnected ? 'text-emerald-600' : 'text-red-500',
-                )}>
-                  {ollamaConnected === null ? '확인 중' :
-                   ollamaConnected ? '연결됨' : '연결 안됨'}
-                </span>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-medium text-emerald-600">준비됨</span>
               </div>
             </div>
-
-            {modelsLoading ? (
-              <div className="flex items-center justify-center py-3 gap-2 text-slate-600 text-xs">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                모델 목록 로딩 중...
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-violet-50 border border-violet-200">
+                <span className="text-xs text-violet-700 font-medium">1단계 탐지</span>
+                <span className="text-xs font-mono text-violet-600">Claude Haiku</span>
               </div>
-            ) : ollamaConnected && availableModels.length > 0 ? (
-              <select
-                value={model}
-                onChange={e => setModel(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm font-mono
-                  focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all"
-              >
-                {availableModels.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            ) : (
-              <div className="space-y-2.5">
-                <input
-                  type="text"
-                  value={model}
-                  onChange={e => setModel(e.target.value)}
-                  placeholder={DEFAULT_MODEL}
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm font-mono
-                    placeholder:text-slate-600 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all"
-                />
-                {ollamaConnected === false && (
-                  <p className="text-xs text-red-500 leading-relaxed">
-                    Ollama가 실행되지 않습니다.<br />
-                    <code className="font-mono bg-red-50 px-1.5 py-0.5 rounded text-red-600">ollama serve</code>를 실행해주세요.
+              <div className="space-y-1.5">
+                <span className="text-xs text-slate-500 px-1">2단계 분석 모델</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(['sonnet', 'opus'] as Pass2Model[]).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setPass2Model(m)}
+                      className={cn(
+                        'py-2 rounded-xl text-xs font-semibold font-mono border transition-all duration-200',
+                        pass2Model === m
+                          ? m === 'opus'
+                            ? 'bg-amber-50 text-amber-700 border-amber-300 shadow-sm'
+                            : 'bg-sky-50 text-sky-600 border-sky-300 shadow-sm'
+                          : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300',
+                      )}
+                    >
+                      {m === 'sonnet' ? 'Sonnet' : 'Opus'}
+                    </button>
+                  ))}
+                </div>
+                {pass2Model === 'opus' && (
+                  <p className="text-[11px] text-amber-600 px-1 leading-relaxed">
+                    Opus는 최고 품질이지만 응답이 느리고 비용이 높습니다.
                   </p>
                 )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* 언어 선택 */}
@@ -307,7 +277,7 @@ export default function AnalyzePage() {
                 <InfoRow label="줄 수" value={`${code.split('\n').length} lines`} />
                 <InfoRow label="문자 수" value={`${code.length} chars`} />
                 <InfoRow label="언어" value={language === 'c' ? 'C' : 'C++'} />
-                <InfoRow label="모델" value={model} />
+                <InfoRow label="엔진" value="Claude API" />
               </div>
             </div>
           )}
@@ -325,11 +295,11 @@ export default function AnalyzePage() {
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="text-sky-400 mt-0.5">•</span>
-                모델 크기가 클수록 분석 정확도가 높습니다
+                1단계(Haiku)로 빠르게 탐지, 2단계(Sonnet)로 심층 분석합니다
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="text-sky-400 mt-0.5">•</span>
-                codellama, qwen2.5-coder를 권장합니다
+                BOF, UAF, NPD, FMT, INT, OOB, SQLi 7가지 유형을 지원합니다
               </li>
             </ul>
           </div>

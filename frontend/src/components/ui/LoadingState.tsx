@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, BrainCircuit, CheckCircle2 } from 'lucide-react'
-import type { AnalysisPhase } from '@/lib/ollama'
+import type { AnalysisPhase } from '@/lib/claude'
 
 interface Props {
   model?: string
@@ -71,7 +71,7 @@ export function AnalysisLoadingState({ model, phase }: Props) {
         <p className="text-slate-800 text-xl font-semibold">코드 분석 중...</p>
         {model && (
           <p className="text-slate-600 text-sm mt-1.5">
-            Ollama ·{' '}
+            Claude API ·{' '}
             <span className="font-mono text-violet-600">{model}</span>
           </p>
         )}
